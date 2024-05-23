@@ -1,17 +1,25 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, TextInput, Button, StyleSheet, Alert} from 'react-native';
-import {createRequest} from '../api/createRequest'; // Asegúrate de tener una función para manejar la solicitud de creación
-import {useNavigation} from '@react-navigation/native';
+import {getRequest} from '../api/getRequest';
+import {updateRequest} from '../api/updateRequest';
 
-export default function CrearCitaScreen() {
-  const navigation = useNavigation();
-
+export default function EditarCitaScreen({route, navigation}) {
+  const {id} = route.params;
   const [name, setName] = useState('');
   const [reason, setReason] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
 
-  const handleCreateCita = async () => {
+  useEffect(() => {
+    getRequest(id).then(response => {
+      setName(response.name);
+      setReason(response.reason);
+      setDate(response.date);
+      setTime(response.time);
+    });
+  }, [id]);
+
+  const handleUpdateCita = async () => {
     if (!name || !reason || !date || !time) {
       Alert.alert('Error', 'Por favor completa todos los campos');
       return;
@@ -19,21 +27,17 @@ export default function CrearCitaScreen() {
 
     try {
       console.log({name, reason, date, time});
-      await createRequest({name, reason, date, time});
-      Alert.alert('Éxito', 'Cita creada exitosamente');
-      setName('');
-      setReason('');
-      setDate('');
-      setTime('');
+      await updateRequest(id, {name, reason, date, time});
+      Alert.alert('Éxito', 'Cita actualizada exitosamente');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Hubo un problema al crear la cita');
+      Alert.alert('Error', 'Hubo un problema al actualizar la cita');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Crear Nueva Cita</Text>
+      <Text style={styles.title}>Actualizar Cita</Text>
       <TextInput
         style={styles.input}
         placeholder="Nombre"
@@ -58,7 +62,7 @@ export default function CrearCitaScreen() {
         value={time}
         onChangeText={setTime}
       />
-      <Button title="Crear Cita" onPress={handleCreateCita} />
+      <Button title="Actualizar Cita" onPress={handleUpdateCita} />
     </View>
   );
 }
