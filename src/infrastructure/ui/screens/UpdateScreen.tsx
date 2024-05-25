@@ -1,22 +1,35 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, TextInput, Button, StyleSheet, Alert} from 'react-native';
-import {getRequest} from '../api/getRequest';
-import {updateRequest} from '../api/updateRequest';
+import {getRequest} from '../../api/getRequest';
+import {updateRequest} from '../../api/updateRequest';
+import UseGlobalState from '../../contexts/GlobalState';
 
 export default function EditarCitaScreen({route, navigation}) {
-  const {id} = route.params;
+  const {id, offline} = route.params;
   const [name, setName] = useState('');
   const [reason, setReason] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
 
+  const {isOffline, localStorage, updateByIdLocalStorage} = UseGlobalState();
+
   useEffect(() => {
-    getRequest(id).then(response => {
-      setName(response.name);
-      setReason(response.reason);
-      setDate(response.date);
-      setTime(response.time);
-    });
+    if (offline) {
+      const storedData = localStorage[id];
+      if (storedData) {
+        setName(storedData.name);
+        setReason(storedData.reason);
+        setDate(storedData.date);
+        setTime(storedData.time);
+      }
+    } else {
+      getRequest(id).then(response => {
+        setName(response.name);
+        setReason(response.reason);
+        setDate(response.date);
+        setTime(response.time);
+      });
+    }
   }, [id]);
 
   const handleUpdateCita = async () => {
@@ -26,10 +39,14 @@ export default function EditarCitaScreen({route, navigation}) {
     }
 
     try {
-      console.log({name, reason, date, time});
-      await updateRequest(id, {name, reason, date, time});
-      Alert.alert('Éxito', 'Cita actualizada exitosamente');
-      navigation.goBack();
+      if (offline) {
+        await updateByIdLocalStorage(id, {name, reason, date, time});
+        navigation.goBack();
+      } else {
+        await updateRequest(id, {name, reason, date, time});
+        Alert.alert('Éxito', 'Cita actualizada exitosamente');
+        navigation.goBack();
+      }
     } catch (error) {
       Alert.alert('Error', 'Hubo un problema al actualizar la cita');
     }

@@ -1,10 +1,13 @@
 import React, {useState} from 'react';
 import {View, Text, TextInput, Button, StyleSheet, Alert} from 'react-native';
-import {createRequest} from '../api/createRequest'; // Asegúrate de tener una función para manejar la solicitud de creación
+import {createRequest} from '../../api/createRequest'; // Asegúrate de tener una función para manejar la solicitud de creación
 import {useNavigation} from '@react-navigation/native';
+import UseGlobalState from '../../contexts/GlobalState';
 
 export default function CrearCitaScreen() {
   const navigation = useNavigation();
+
+  const {isOffline, pushLocalStorage} = UseGlobalState();
 
   const [name, setName] = useState('');
   const [reason, setReason] = useState('');
@@ -19,8 +22,13 @@ export default function CrearCitaScreen() {
 
     try {
       console.log({name, reason, date, time});
-      await createRequest({name, reason, date, time});
-      Alert.alert('Éxito', 'Cita creada exitosamente');
+      if (isOffline) {
+        await pushLocalStorage({name, reason, date, time});
+        Alert.alert('Dato guardado localmente');
+      } else {
+        await createRequest({name, reason, date, time});
+        Alert.alert('Éxito', 'Cita creada exitosamente');
+      }
       setName('');
       setReason('');
       setDate('');
